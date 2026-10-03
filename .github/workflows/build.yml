@@ -34,7 +34,7 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
         
-          make O=out sweet_defconfig
+          make O=out vendor/defconfig
           scripts/config --file out/.config \
             -e KSU -e KSU_MANUAL_HOOK \
             -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK
