@@ -21,6 +21,7 @@ jobs:
         run: |
           curl -fLO https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-14.0.6-x86_64.tar.xz
           tar xf llvm-14.0.6-x86_64.tar.xz
+          mv llvm-14.0.6-x86_64 clang
           echo "$(pwd)/llvm-14.0.6-x86_64/bin" >> $GITHUB_PATH
           clang --version
           
