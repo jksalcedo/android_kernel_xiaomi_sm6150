@@ -31,21 +31,12 @@ jobs:
 
       - name: Build Kernel
         run: |
-          export PATH="$(pwd)/clang/bin:$PATH"
-          export ARCH=arm64 SUBARCH=arm64
-
           make O=out sweet_defconfig
-
           scripts/config --file out/.config \
-            -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS
+            -e KSU -e KSU_MANUAL_HOOK \
+            -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK
           make O=out olddefconfig
-
-          make -j$(nproc --all) O=out \
-            CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
-            OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
-            CLANG_TRIPLE=aarch64-linux-gnu- \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          grep -E 'CONFIG_KSU' out/.config
 
       - name: Package with AnyKernel3
         run: |
