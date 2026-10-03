@@ -1,0 +1,63 @@
+name: Build Xiaomi sweet Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex build-essential libssl-dev libelf-dev \
+            cpio zip lz4 python3 git curl ccache \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Fetch Clang
+        run: |
+          curl -fLO https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-14.0.6-x86_64.tar.xz
+          tar xf llvm-14.0.6-x86_64.tar.xz
+          echo "$(pwd)/llvm-14.0.6-x86_64/bin" >> $GITHUB_PATH
+          clang --version
+          
+      - name: Setup KernelSU-Next
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s next
+
+      - name: Build Kernel
+        run: |
+          export PATH="$(pwd)/clang/bin:$PATH"
+          export ARCH=arm64 SUBARCH=arm64
+
+          make O=out sweet_defconfig
+
+          scripts/config --file out/.config \
+            -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS
+          make O=out olddefconfig
+
+          make -j$(nproc --all) O=out \
+            CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
+            OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/jksalcedo/AnyKernel3.git AnyKernel3
+          B=out/arch/arm64/boot
+          ls -la $B
+          cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/
+          [ -f $B/dtbo.img ] && cp $B/dtbo.img AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../mayon-kernel-sweet.zip . -x ".git*" "README.md" "*placeholder"
+
+      - name: Upload Flashable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: mayon-kernel-sweet
+          path: mayon-kernel-sweet.zip
