@@ -27,14 +27,15 @@ jobs:
           
       - name: Setup KernelSU-Next
         run: |
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/legacy/kernel/setup.sh" | bash -s next
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
 
       - name: Build Kernel
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
         
-          make O=out vendor/sdmsteppe-perf_defconfig vendor/sweet.config
+          make O=out vendor/sdmsteppe-perf_defconfig
+          ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/sweet.config
           scripts/config --file out/.config \
             -e KSU -e KSU_MANUAL_HOOK \
             -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK
