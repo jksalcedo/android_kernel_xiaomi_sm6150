@@ -22,7 +22,7 @@ jobs:
           curl -fLO https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-14.0.6-x86_64.tar.xz
           tar xf llvm-14.0.6-x86_64.tar.xz
           mv llvm-14.0.6-x86_64 clang
-          echo "$(pwd)/llvm-14.0.6-x86_64/bin" >> $GITHUB_PATH
+          echo "$(pwd)/clang/bin" >> $GITHUB_PATH
           clang --version
           
       - name: Setup KernelSU-Next
@@ -34,7 +34,7 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
         
-          make O=out vendor/defconfig
+          make O=out vendor/sdmsteppe-perf_defconfig vendor/sweet.config
           scripts/config --file out/.config \
             -e KSU -e KSU_MANUAL_HOOK \
             -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK
@@ -53,7 +53,7 @@ jobs:
           git clone --depth=1 https://github.com/jksalcedo/AnyKernel3.git AnyKernel3
           B=out/arch/arm64/boot
           ls -la $B
-          cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/
+          cp $B/Image.gz AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/ 2>/dev/null || cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null
           [ -f $B/dtbo.img ] && cp $B/dtbo.img AnyKernel3/
           cd AnyKernel3
           zip -r9 ../mayon-kernel-sweet.zip . -x ".git*" "README.md" "*placeholder"
