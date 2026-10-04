@@ -29,14 +29,9 @@ jobs:
           cd ..
           clang --version
           
-      - name: Setup KernelSU & SUSFS
+      - name: Setup SukiSU-Ultra
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
-          git clone --depth 1 -b kernel-4.14 https://gitlab.com/simonpunk/susfs4ksu.git susfs_repo
-          cp -r susfs_repo/kernel_patches/KernelSU/* KernelSU/
-          cd KernelSU
-          patch -p1 < 10_enable_susfs_for_ksu.patch
-          cd ..
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
 
       - name: Build Kernel
         run: |
