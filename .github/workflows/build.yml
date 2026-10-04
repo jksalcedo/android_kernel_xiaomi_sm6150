@@ -32,7 +32,7 @@ jobs:
       - name: Setup SukiSU-Ultra
         run: |
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
-          sed -i 's/access_ok(/access_ok(VERIFY_WRITE, /g' KernelSU/kpm/kpm.c
+          sed -i 's/access_ok(/access_ok(VERIFY_READ, /g' KernelSU/kernel/kpm/kpm.c
 
       - name: Build Kernel
         run: |
