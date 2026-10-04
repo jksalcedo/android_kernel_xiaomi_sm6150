@@ -17,12 +17,16 @@ jobs:
             cpio zip lz4 python3 git curl ccache \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-      - name: Fetch Clang
+      - name: Fetch Neutron Clang
         run: |
-          curl -fLO https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-14.0.6-x86_64.tar.xz
-          tar xf llvm-14.0.6-x86_64.tar.xz
-          mv llvm-14.0.6-x86_64 clang
-          echo "$(pwd)/clang/bin" >> $GITHUB_PATH
+          mkdir -p clang
+          cd clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S
+          ./antman --patch=glibc
+          echo "$(pwd)/bin" >> $GITHUB_PATH
+          cd ..
           clang --version
           
       - name: Setup KernelSU-Next
@@ -38,9 +42,10 @@ jobs:
           ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/sweet.config
           scripts/config --file out/.config \
             -e KSU -e KSU_MANUAL_HOOK \
-            -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK
+            -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK \
+            -e LTO_CLANG -e THINLTO
           make O=out olddefconfig
-          grep -E 'CONFIG_KSU' out/.config
+          grep -E 'CONFIG_KSU|LTO' out/.config
 
           make -j$(nproc --all) O=out \
             CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
