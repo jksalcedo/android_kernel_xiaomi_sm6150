@@ -29,9 +29,14 @@ jobs:
           cd ..
           clang --version
           
-      - name: Setup KernelSU-Next
+      - name: Setup KernelSU-Next & SUSFS
         run: |
           curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
+          git clone --depth 1 -b kernel-4.14 https://gitlab.com/simonpunk/susfs4ksu.git susfs_repo
+          cp -r susfs_repo/kernel_patches/KernelSU/* KernelSU/
+          cd KernelSU
+          patch -p1 < 10_enable_susfs_for_ksu.patch
+          cd ..
 
       - name: Build Kernel
         run: |
@@ -43,7 +48,8 @@ jobs:
           scripts/config --file out/.config \
             -e KSU -e KSU_MANUAL_HOOK \
             -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK \
-            -e LTO_CLANG -e THINLTO
+            -e LTO_CLANG -e THINLTO \
+            -e KSU_SUSFS -e KSU_SUSFS_HAS_MAGIC_MOUNT
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|LTO' out/.config
 
