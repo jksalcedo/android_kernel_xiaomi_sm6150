@@ -29,10 +29,10 @@ jobs:
           cd ..
           clang --version
           
-      - name: Setup SukiSU-Ultra
+      - name: Setup KernelSU and SUSFS
         run: |
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
-          sed -i 's/access_ok(/access_ok(VERIFY_READ, /g' KernelSU/kernel/kpm/kpm.c
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+          curl -LSs "https://gitlab.com/simonpunk/susfs4ksu/-/raw/kernel-4.14/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" | sed 's/ksu_file:s0/devpts:s0/' | patch -p1 -d KernelSU
 
       - name: Build Kernel
         run: |
@@ -42,8 +42,7 @@ jobs:
           make O=out vendor/sdmsteppe-perf_defconfig
           ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/sweet.config
           scripts/config --file out/.config \
-            -e KSU -e KSU_MANUAL_HOOK \
-            -d KSU_KPROBES_HOOK -d KSU_SYSCALL_TABLE_HOOK \
+            -e KSU \
             -e LTO_CLANG -e THINLTO \
             -e KSU_SUSFS -e KSU_SUSFS_HAS_MAGIC_MOUNT
           make O=out olddefconfig
