@@ -33,8 +33,8 @@ jobs:
         run: |
           curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
           git clone --depth 1 -b kernel-4.14 https://gitlab.com/simonpunk/susfs4ksu.git susfs_repo
-          cp -r susfs_repo/kernel_patches/KernelSU/* KernelSU/
-          cd KernelSU
+          cp -r susfs_repo/kernel_patches/KernelSU/* KernelSU-Next/
+          cd KernelSU-Next
           patch -p1 < 10_enable_susfs_for_ksu.patch
           cd ..
 
