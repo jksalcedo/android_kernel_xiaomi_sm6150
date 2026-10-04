@@ -34,7 +34,7 @@ Trigger the workflow via the **Actions** tab by selecting **build kernel** > **R
 ## Credits & Acknowledgements
 
 * [LineageOS](https://github.com/LineageOS) team for the device kernel source tree
-* [KernelSU](https://github.com/tiann/KernelSU) by `@tiann` & contributors
+* [Baka-SU (ReSukiSU)](https://github.com/Baka-SU/BakaSU) team for root
 * [SUSFS (susfs4ksu)](https://gitlab.com/simonpunk/susfs4ksu) by `@simonpunk`
 * [Neutron Toolchains](https://github.com/Neutron-Toolchains) by `@beakthoven`
 * [AnyKernel3](https://github.com/osm0sis/AnyKernel3) by `@osm0sis`
