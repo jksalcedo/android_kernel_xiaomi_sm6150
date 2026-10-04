@@ -32,7 +32,6 @@ jobs:
       - name: Setup KernelSU and SUSFS
         run: |
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
-          curl -LSs "https://gitlab.com/simonpunk/susfs4ksu/-/raw/kernel-4.14/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" | sed 's/ksu_file:s0/devpts:s0/' | patch -p1 -d KernelSU
 
       - name: Build Kernel
         run: |
