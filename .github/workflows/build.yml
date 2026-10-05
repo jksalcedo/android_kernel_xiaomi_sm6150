@@ -46,10 +46,14 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
+          
+          echo "" > .scmversion
         
           make O=out vendor/sdmsteppe-perf_defconfig
           ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/sweet.config
           scripts/config --file out/.config \
+            --set-str LOCALVERSION "-mayon" \
+            -d LOCALVERSION_AUTO \
             -e KSU \
             -e LTO_CLANG \
             -e THINLTO \
@@ -80,11 +84,12 @@ jobs:
           ls -la $B
           cp $B/Image.gz AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/ 2>/dev/null || cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null
           [ -f $B/dtbo.img ] && cp $B/dtbo.img AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../mayon-kernel-sweet.zip . -x ".git*" "README.md" "*placeholder"
+          
+          # Clean up unneeded files before uploading
+          rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/*placeholder
 
       - name: Upload Flashable ZIP
         uses: actions/upload-artifact@v4
         with:
           name: mayon-kernel-sweet
-          path: mayon-kernel-sweet.zip
+          path: AnyKernel3/
