@@ -59,8 +59,6 @@ jobs:
           scripts/config --file out/.config \
             -d LOCALVERSION_AUTO \
             -e KSU \
-            -e LTO_CLANG \
-            -e THINLTO \
             -e KSU_SUSFS -e KSU_SUSFS_HAS_MAGIC_MOUNT \
             -e KSU_SUSFS_SUS_PATH \
             -e KSU_SUSFS_SUS_MOUNT \
