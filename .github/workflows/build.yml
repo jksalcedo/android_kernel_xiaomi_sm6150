@@ -2,6 +2,11 @@ name: build kernel
 
 on:
   workflow_dispatch:
+    inputs:
+      kernel_version:
+        description: 'Kernel Version (e.g. v0.1.0-beta.1)'
+        required: true
+        default: 'v0.1.0-beta.1'
 
 jobs:
   build-kernel:
@@ -52,7 +57,6 @@ jobs:
           make O=out vendor/sdmsteppe-perf_defconfig
           ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/sweet.config
           scripts/config --file out/.config \
-            --set-str LOCALVERSION "-mayon" \
             -d LOCALVERSION_AUTO \
             -e KSU \
             -e LTO_CLANG \
@@ -88,8 +92,12 @@ jobs:
           # Clean up unneeded files before uploading
           rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/*placeholder
 
+      - name: Set Build Date
+        run: |
+          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
       - name: Upload Flashable ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: mayon-kernel-sweet
+          name: MayonKernel-sweet-${{ github.event.inputs.kernel_version }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357
           path: AnyKernel3/
