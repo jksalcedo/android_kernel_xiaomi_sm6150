@@ -29,9 +29,9 @@ jobs:
           cd ..
           clang --version
           
-      - name: Setup ReSukiSU
+      - name: Setup BakaSU
         run: |
-          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/v4.2.0-rc3/kernel/setup.sh" | bash -s v4.2.0-rc3
+          curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/v4.2.0-rc3/kernel/setup.sh" | bash -s v4.2.0-rc3
 
       - name: Show build resources
         run: |
