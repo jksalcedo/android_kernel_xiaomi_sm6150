@@ -1,0 +1,49 @@
+diff --git a/kernel/feature/sucompat.c b/kernel/feature/sucompat.c
+index aa4a13e..76bbf0b 100644
+--- a/kernel/feature/sucompat.c
++++ b/kernel/feature/sucompat.c
+@@ -523,7 +523,7 @@ int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr, v
+ #endif
+ #endif
+ 
+-#ifdef CONFIG_KSU_SUSFS
++#if defined(CONFIG_KSU_SUSFS) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *__unused_flags)
+ {
+     const struct cred *old_cred;
+@@ -597,7 +597,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
+ }
+ #endif
+ 
+-#ifdef CONFIG_KSU_SUSFS
++#if defined(CONFIG_KSU_SUSFS) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+ int ksu_handle_stat(int *dfd, struct filename **filename, int *flags)
+ {
+     const struct cred *old_cred;
+diff --git a/kernel/feature/sucompat.h b/kernel/feature/sucompat.h
+index efdc23d..6f69620 100644
+--- a/kernel/feature/sucompat.h
++++ b/kernel/feature/sucompat.h
+@@ -14,7 +14,7 @@ void ksu_sucompat_init(void);
+ void ksu_sucompat_exit(void);
+ 
+ // Handler functions exported for hook_manager
+-#ifdef CONFIG_KSU_SUSFS
++#if defined(CONFIG_KSU_SUSFS) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *__unused_flags);
+ int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
+ #else
+diff --git a/kernel/runtime/ksud_integration.c b/kernel/runtime/ksud_integration.c
+index 2ddcf31..467f6de 100644
+--- a/kernel/runtime/ksud_integration.c
++++ b/kernel/runtime/ksud_integration.c
+@@ -567,7 +567,8 @@ static bool is_init_rc(struct file *fp)
+         return false;
+     }
+ 
+-    if (!S_ISREG(fp->f_path.dentry->d_inode->i_mode)) {
++    struct inode *inode = file_inode(fp);
++    if (!inode || !S_ISREG(inode->i_mode)) {
+         return false;
+     }
+ 

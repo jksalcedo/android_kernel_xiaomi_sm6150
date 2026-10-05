@@ -37,6 +37,7 @@ jobs:
       - name: Setup BakaSU
         run: |
           curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/v4.2.0-rc3/kernel/setup.sh" | bash -s v4.2.0-rc3
+          patch -p1 -d KernelSU < patches/bakasu-4.14-compat.patch
 
       - name: Show build resources
         run: |
@@ -49,6 +50,7 @@ jobs:
 
       - name: Build Kernel
         run: |
+          rm -rf out
           export ARCH=arm64
           export SUBARCH=arm64
           
@@ -78,10 +80,6 @@ jobs:
       - name: Package with AnyKernel3
         run: |
           git clone --depth=1 https://github.com/jksalcedo/AnyKernel3.git AnyKernel3
-          sed -i 's/^block=.*/BLOCK=boot;/' AnyKernel3/anykernel.sh
-          sed -i 's/^is_slot_device=.*/IS_SLOT_DEVICE=0;/' AnyKernel3/anykernel.sh
-          sed -i 's/^ramdisk_compression=.*/RAMDISK_COMPRESSION=auto;/' AnyKernel3/anykernel.sh
-          sed -i 's/^patch_vbmeta_flag=.*/PATCH_VBMETA_FLAG=auto;/' AnyKernel3/anykernel.sh
           B=out/arch/arm64/boot
           ls -la $B
           cp $B/Image.gz AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/ 2>/dev/null || cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null

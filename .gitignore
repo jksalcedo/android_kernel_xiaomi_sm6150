@@ -10,6 +10,8 @@
 # Normal rules (sorted alphabetically)
 #
 .*
+!.gitignore
+!.github/
 *.a
 *.bin
 *.bz2
@@ -88,7 +90,7 @@ arch/*/include/generated
 patches-*
 
 # quilt's files
-patches
+# patches
 series
 
 # cscope files
@@ -129,3 +131,9 @@ kernel/configs/android-*.cfg
 #Ignoring Android.bp link file
 #
 Android.bp
+
+# Build output and temporary patch artifacts
+/out/
+patch_namespace.c
+!patches/
+!patches/*.patch
