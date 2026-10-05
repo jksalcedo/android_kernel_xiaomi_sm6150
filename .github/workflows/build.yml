@@ -31,7 +31,16 @@ jobs:
           
       - name: Setup ReSukiSU
         run: |
-          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/v4.2.0-rc3/kernel/setup.sh" | bash -s v4.2.0-rc3
+
+      - name: Show build resources
+        run: |
+          echo "CPU:"
+          nproc
+          echo "Memory:"
+          free -h
+          echo "Disk:"
+          df -h
 
       - name: Build Kernel
         run: |
@@ -53,7 +62,7 @@ jobs:
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|CONFIG_KSU_SUSFS|LTO' out/.config
 
-          make -j$(nproc --all) O=out \
+          /usr/bin/time -v make -j2 O=out \
             CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
             OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
             CLANG_TRIPLE=aarch64-linux-gnu- \
