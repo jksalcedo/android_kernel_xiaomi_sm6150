@@ -86,6 +86,8 @@ jobs:
           ls -la $B
           cp $B/Image.gz AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/ 2>/dev/null || cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null
           [ -f $B/dtbo.img ] && cp $B/dtbo.img AnyKernel3/
+          [ -f $B/dtb.img ] && cp $B/dtb.img AnyKernel3/
+          [ -f $B/dtb ] && cp $B/dtb AnyKernel3/dtb.img 2>/dev/null || true
           
           # Clean up unneeded files before uploading
           rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/*placeholder
@@ -98,4 +100,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MayonKernel-sweet-${{ github.event.inputs.kernel_version }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357
-          path: AnyKernel3/
+          path: AnyKernel3/*
