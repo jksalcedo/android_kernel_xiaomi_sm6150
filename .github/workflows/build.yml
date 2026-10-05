@@ -49,6 +49,9 @@ jobs:
             -e THINLTO \
             -e KSU_SUSFS -e KSU_SUSFS_HAS_MAGIC_MOUNT
           
+          ! grep -R --exclude-dir=kernelsu "ksu_init_rc_hook" -n fs kernel include drivers
+          ! grep -R --exclude-dir=kernelsu "ksu_vfs_read_hook" -n fs kernel include drivers
+          grep -R "KSU_MANUAL_HOOK_AUTO_INITRC_HOOK" -n KernelSU
           
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK_AUTO_INPUT_HOOK|CONFIG_KSU_MANUAL_HOOK|CONFIG_KSU_SUSFS|LTO' out/.config
