@@ -927,6 +927,61 @@ bypass_orig_flow:
 	} else {
 		ret = SEQ_SKIP;
 	}
+		seq_putc(m, '\n');
+	}
+
+	if (!rollup_mode)
+		seq_printf(m,
+			   "Size:           %8lu kB\n"
+			   "KernelPageSize: %8lu kB\n"
+			   "MMUPageSize:    %8lu kB\n",
+			   (vma->vm_end - vma->vm_start) >> 10,
+			   vma_kernel_pagesize(vma) >> 10,
+			   vma_mmu_pagesize(vma) >> 10);
+
+
+	if (!rollup_mode || last_vma)
+		seq_printf(m,
+			   "Rss:            %8lu kB\n"
+			   "Pss:            %8lu kB\n"
+			   "Shared_Clean:   %8lu kB\n"
+			   "Shared_Dirty:   %8lu kB\n"
+			   "Private_Clean:  %8lu kB\n"
+			   "Private_Dirty:  %8lu kB\n"
+			   "Referenced:     %8lu kB\n"
+			   "Anonymous:      %8lu kB\n"
+			   "LazyFree:       %8lu kB\n"
+			   "AnonHugePages:  %8lu kB\n"
+			   "ShmemPmdMapped: %8lu kB\n"
+			   "Shared_Hugetlb: %8lu kB\n"
+			   "Private_Hugetlb: %7lu kB\n"
+			   "Swap:           %8lu kB\n"
+			   "SwapPss:        %8lu kB\n"
+			   "Locked:         %8lu kB\n",
+			   mss->resident >> 10,
+			   (unsigned long)(mss->pss >> (10 + PSS_SHIFT)),
+			   mss->shared_clean  >> 10,
+			   mss->shared_dirty  >> 10,
+			   mss->private_clean >> 10,
+			   mss->private_dirty >> 10,
+			   mss->referenced >> 10,
+			   mss->anonymous >> 10,
+			   mss->lazyfree >> 10,
+			   mss->anonymous_thp >> 10,
+			   mss->shmem_thp >> 10,
+			   mss->shared_hugetlb >> 10,
+			   mss->private_hugetlb >> 10,
+			   mss->swap >> 10,
+			   (unsigned long)(mss->swap_pss >> (10 + PSS_SHIFT)),
+			   (unsigned long)(mss->pss_locked >> (10 + PSS_SHIFT)));
+
+	if (!rollup_mode) {
+		arch_show_smap(m, vma);
+		show_smap_vma_flags(m, vma);
+	}
+	m_cache_vma(m, vma);
+	return ret;
+}
 
 
 
