@@ -7,6 +7,20 @@ on:
         description: 'Kernel Version (e.g. v0.1.0-beta.1)'
         required: true
         default: 'v0.1.0-beta.1'
+      create_release:
+        description: 'Create a GitHub Release'
+        required: false
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  BAKASU_VERSION: 'v4.2.0-rc3'
 
 jobs:
   build-kernel:
@@ -14,6 +28,24 @@ jobs:
     steps:
       - name: Checkout Kernel Source
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version and Metadata
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            KERNEL_VER="${{ github.event.inputs.kernel_version }}"
+          else
+            KERNEL_VER="${{ github.ref_name }}"
+          fi
+          echo "KERNEL_VERSION=${KERNEL_VER}" >> $GITHUB_ENV
+          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+          if echo "${KERNEL_VER}" | grep -q -- '-'; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
 
       - name: Install Build Dependencies
         run: |
@@ -36,7 +68,7 @@ jobs:
           
       - name: Setup BakaSU
         run: |
-          curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/v4.2.0-rc3/kernel/setup.sh" | bash -s v4.2.0-rc3
+          curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/${BAKASU_VERSION}/kernel/setup.sh" | bash -s "${BAKASU_VERSION}"
           patch -p1 -d KernelSU < patches/bakasu-4.14-compat.patch
 
       - name: Show build resources
@@ -90,12 +122,76 @@ jobs:
           # Clean up unneeded files before uploading
           rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/*placeholder
 
-      - name: Set Build Date
-        run: |
-          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          # Create flashable ZIP
+          ZIP_NAME="MayonKernel-sweet-${{ env.KERNEL_VERSION }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357.zip"
+          (cd AnyKernel3 && zip -r9 "../${ZIP_NAME}" . -x ".git/*")
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
-      - name: Upload Flashable ZIP
+      - name: Upload Flashable ZIP (Action Artifact)
         uses: actions/upload-artifact@v6
         with:
-          name: MayonKernel-sweet-${{ github.event.inputs.kernel_version }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357
+          name: MayonKernel-sweet-${{ env.KERNEL_VERSION }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357
           path: AnyKernel3/*
+
+      - name: 🚀 Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == true)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "${{ env.IS_PRERELEASE }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+            echo "Publishing as Pre-release"
+          else
+            echo "Publishing as Stable release"
+          fi
+
+          # Dynamically fetch BakaSU Manager download URLs
+          BAKASU_ARM64_URL=$(gh api "repos/Baka-SU/BakaSU/releases/tags/${BAKASU_VERSION}" --jq '.assets[] | select(.name | test("arm64-v8a.*\\.apk$")) | .browser_download_url' 2>/dev/null || echo "")
+          BAKASU_UNIVERSAL_URL=$(gh api "repos/Baka-SU/BakaSU/releases/tags/${BAKASU_VERSION}" --jq '.assets[] | select(.name | test("universal.*\\.apk$")) | .browser_download_url' 2>/dev/null || echo "")
+
+          cat <<EOF > release_notes.md
+          ## Mayon Kernel for Xiaomi Redmi Note 10 Pro (sweet / sweetin)
+
+          ### 📦 Kernel Information
+          - **Version:** \`${{ env.KERNEL_VERSION }}\`
+          - **Linux Version:** \`4.14.357\`
+          - **Build Date:** \`${{ env.BUILD_DATE }}\`
+          - **Build Run:** \`#${{ github.run_number }}\`
+          - **Installation:** Flash the attached \`${{ env.ZIP_NAME }}\` via custom recovery (TWRP / OrangeFox).
+
+          ### 🛡️ Root & Hide Components
+          - **KernelSU (BakaSU):** [${BAKASU_VERSION}](https://github.com/Baka-SU/BakaSU/releases/tag/${BAKASU_VERSION})
+          EOF
+
+          if [ -n "$BAKASU_ARM64_URL" ]; then
+            cat <<EOF >> release_notes.md
+          - **BakaSU Manager (arm64-v8a):** [Download APK](${BAKASU_ARM64_URL})
+          EOF
+          fi
+
+          if [ -n "$BAKASU_UNIVERSAL_URL" ]; then
+            cat <<EOF >> release_notes.md
+          - **BakaSU Manager (Universal):** [Download APK](${BAKASU_UNIVERSAL_URL})
+          EOF
+          fi
+
+          cat <<EOF >> release_notes.md
+          - **SuSFS:** \`v2.3.0\`
+
+          > [!NOTE]
+          > Make sure to install the matching BakaSU manager APK above for root management and SuSFS compatibility.
+          EOF
+
+          if gh release view "${{ env.KERNEL_VERSION }}" >/dev/null 2>&1; then
+            echo "Updating existing release ${{ env.KERNEL_VERSION }}..."
+            gh release upload "${{ env.KERNEL_VERSION }}" "${{ env.ZIP_NAME }}" --clobber
+            gh release edit "${{ env.KERNEL_VERSION }}" --notes-file release_notes.md $PRERELEASE_FLAG
+          else
+            echo "Creating new release ${{ env.KERNEL_VERSION }}..."
+            gh release create "${{ env.KERNEL_VERSION }}" "${{ env.ZIP_NAME }}" \
+              --title "Mayon Kernel ${{ env.KERNEL_VERSION }}" \
+              --notes-file release_notes.md \
+              $PRERELEASE_FLAG
+          fi
+
