@@ -43,14 +43,16 @@ jobs:
           scripts/config --file out/.config \
             -e KSU \
             -e KSU_MANUAL_HOOK \
-            -e LTO_CLANG -e THINLTO \
+            -e KSU_MANUAL_HOOK_AUTO_INPUT_HOOK \
+            -e LTO_CLANG \
+            -e THINLTO \
             -e KSU_SUSFS -e KSU_SUSFS_HAS_MAGIC_MOUNT
           
           ! grep -R "ksu_vfs_read_hook" -n fs kernel include drivers
           grep -R "ksu_init_rc_hook" -n fs kernel include drivers || true
           
           make O=out olddefconfig
-          grep -E 'CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK|CONFIG_KSU_SUSFS|LTO' out/.config
+          grep -E 'CONFIG_KSU|KSU_MANUAL_HOOK_AUTO_INPUT_HOOK|CONFIG_KSU_MANUAL_HOOK|CONFIG_KSU_SUSFS|LTO' out/.config
 
           make -j$(nproc --all) O=out \
             CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
