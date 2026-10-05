@@ -51,6 +51,9 @@ jobs:
           
           ! grep -R "ksu_vfs_read_hook" -n fs kernel include drivers
           grep -R "ksu_init_rc_hook" -n fs kernel include drivers || true
+          grep -n -A12 -B4 "SYSCALL_DEFINE3(read" fs/read_write.c
+          grep -R "ksu_handle_sys_read" -n fs kernel include drivers
+          grep -R "ksu_vfs_read_hook" -n fs kernel include drivers && exit 1 || true
           
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|CONFIG_KSU_MANUAL_HOOK_AUTO_INPUT_HOOK|CONFIG_KSU_MANUAL_HOOK|CONFIG_KSU_SUSFS|LTO' out/.config
