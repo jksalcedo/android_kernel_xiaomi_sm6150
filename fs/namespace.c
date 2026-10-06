@@ -72,9 +72,6 @@ __setup("mphash_entries=", set_mphash_entries);
 static u64 event;
 static DEFINE_IDA(mnt_id_ida);
 static DEFINE_IDA(mnt_group_ida);
-static DEFINE_SPINLOCK(mnt_id_lock);
-static int mnt_id_start = 0;
-static int mnt_group_start = 1;
 
 static struct hlist_head *mount_hashtable __read_mostly;
 static struct hlist_head *mountpoint_hashtable __read_mostly;
@@ -112,12 +109,11 @@ static inline struct hlist_head *mp_hash(struct dentry *dentry)
 
 static int mnt_alloc_id(struct mount *mnt)
 {
-	int res = ida_alloc_min(&mnt_id_ida, mnt_id_start, GFP_KERNEL);
+	int res = ida_alloc(&mnt_id_ida, GFP_KERNEL);
 
 	if (res < 0)
 		return res;
 	mnt->mnt_id = res;
-	mnt_id_start = res + 1;
 	return 0;
 }
 
@@ -138,9 +134,9 @@ static void mnt_free_id(struct mount *mnt)
  */
 static int mnt_alloc_group_id(struct mount *mnt)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	int res;
 
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	/* - At frist susfs_is_sdcard_android_data_decrypted is set to false in kernel,
 	 *   and it is still allowed to assign our custom mnt_group_id via susfs_ksu_mnt_group_ida
 	 *   if it is ksu mounts, until susfs_is_sdcard_android_data_decrypted is set to true
@@ -148,18 +144,16 @@ static int mnt_alloc_group_id(struct mount *mnt)
 	 */
 	if (susfs_is_current_ksu_domain()) {
 		res = ida_alloc_min(&mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, GFP_KERNEL);
-		if (res < 0)
-			return res;
-		mnt->mnt_group_id = res;
-		return 0;
+		goto bypass_orig_flow;
 	}
+	res = ida_alloc_min(&mnt_group_ida, 1, GFP_KERNEL);
+bypass_orig_flow:
+#else
+	int res = ida_alloc_min(&mnt_group_ida, 1, GFP_KERNEL);
 #endif
-
-	res = ida_alloc_min(&mnt_group_ida, mnt_group_start, GFP_KERNEL);
 	if (res < 0)
 		return res;
 	mnt->mnt_group_id = res;
-	mnt_group_start = res + 1;
 	return 0;
 }
 
