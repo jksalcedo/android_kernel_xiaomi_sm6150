@@ -902,8 +902,11 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 	/* mmap_sem is held in m_start */
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 	if (vma->vm_file) {
-		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
+		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file))) {
+			if (!rollup_mode)
+				return 0;
 			goto bypass_orig_flow;
+		}
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 
