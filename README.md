@@ -1,5 +1,7 @@
 # Mayon Kernel for Xiaomi sweet device
 
+![GitHub Release](https://img.shields.io/github/v/release/jksalcedo/android_kernel_xiaomi_sm6150?include_prereleases)
+
 A performance-optimized, and thermally balanced custom kernel for the Redmi Note 10 Pro / Max (`sweet` / `sweetin`).
 
 ## Features
