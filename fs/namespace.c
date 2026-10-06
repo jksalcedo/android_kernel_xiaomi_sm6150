@@ -151,6 +151,7 @@ static int mnt_alloc_group_id(struct mount *mnt)
 {
 	int res;
 
+retry:
 	if (!ida_pre_get(&mnt_group_ida, GFP_KERNEL))
 		return -ENOMEM;
 
@@ -162,11 +163,15 @@ static int mnt_alloc_group_id(struct mount *mnt)
 	 */
 	if (susfs_is_current_ksu_domain()) {
 		res = ida_get_new_above(&mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, &mnt->mnt_group_id);
+		if (res == -EAGAIN)
+			goto retry;
 		return res ? res : 0;
 	}
 #endif
 
 	res = ida_get_new_above(&mnt_group_ida, mnt_group_start, &mnt->mnt_group_id);
+	if (res == -EAGAIN)
+		goto retry;
 	if (!res)
 		mnt_group_start = mnt->mnt_group_id + 1;
 
