@@ -927,6 +927,11 @@ bypass_orig_flow:
 	} else {
 		ret = SEQ_SKIP;
 	}
+	if (vma_get_anon_name(vma)) {
+		seq_puts(m, "Name:           ");
+		seq_print_vma_name(m, vma);
+		seq_putc(m, '\n');
+	}
 
 	if (!rollup_mode)
 		seq_printf(m,
