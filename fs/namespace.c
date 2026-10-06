@@ -112,34 +112,23 @@ static inline struct hlist_head *mp_hash(struct dentry *dentry)
 
 static int mnt_alloc_id(struct mount *mnt)
 {
-	int res;
+	int res = ida_alloc_min(&mnt_id_ida, mnt_id_start, GFP_KERNEL);
 
-retry:
-	ida_pre_get(&mnt_id_ida, GFP_KERNEL);
-	spin_lock(&mnt_id_lock);
-	res = ida_get_new_above(&mnt_id_ida, mnt_id_start, &mnt->mnt_id);
-	if (!res)
-		mnt_id_start = mnt->mnt_id + 1;
-	spin_unlock(&mnt_id_lock);
-	if (res == -EAGAIN)
-		goto retry;
-
-	return res;
+	if (res < 0)
+		return res;
+	mnt->mnt_id = res;
+	mnt_id_start = res + 1;
+	return 0;
 }
 
 static void mnt_free_id(struct mount *mnt)
 {
-	int id = mnt->mnt_id;
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	if (mnt->mnt.mnt_flags & VFSMOUNT_MNT_FLAGS_KSU_UNSHARED_MNT)
 		return;
 
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	spin_lock(&mnt_id_lock);
-	ida_remove(&mnt_id_ida, id);
-	if (mnt_id_start > id)
-		mnt_id_start = id;
-	spin_unlock(&mnt_id_lock);
+	ida_free(&mnt_id_ida, mnt->mnt_id);
 }
 
 /*
@@ -151,10 +140,6 @@ static int mnt_alloc_group_id(struct mount *mnt)
 {
 	int res;
 
-retry:
-	if (!ida_pre_get(&mnt_group_ida, GFP_KERNEL))
-		return -ENOMEM;
-
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	/* - At frist susfs_is_sdcard_android_data_decrypted is set to false in kernel,
 	 *   and it is still allowed to assign our custom mnt_group_id via susfs_ksu_mnt_group_ida
@@ -162,20 +147,20 @@ retry:
 	 *   when boot-completed stage is triggered in core_hook.c 
 	 */
 	if (susfs_is_current_ksu_domain()) {
-		res = ida_get_new_above(&mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, &mnt->mnt_group_id);
-		if (res == -EAGAIN)
-			goto retry;
-		return res ? res : 0;
+		res = ida_alloc_min(&mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, GFP_KERNEL);
+		if (res < 0)
+			return res;
+		mnt->mnt_group_id = res;
+		return 0;
 	}
 #endif
 
-	res = ida_get_new_above(&mnt_group_ida, mnt_group_start, &mnt->mnt_group_id);
-	if (res == -EAGAIN)
-		goto retry;
-	if (!res)
-		mnt_group_start = mnt->mnt_group_id + 1;
-
-	return res ? res : 0;
+	res = ida_alloc_min(&mnt_group_ida, mnt_group_start, GFP_KERNEL);
+	if (res < 0)
+		return res;
+	mnt->mnt_group_id = res;
+	mnt_group_start = res + 1;
+	return 0;
 }
 
 /*
@@ -183,10 +168,7 @@ retry:
  */
 void mnt_release_group_id(struct mount *mnt)
 {
-	int id = mnt->mnt_group_id;
-	ida_remove(&mnt_group_ida, id);
-	if (mnt_group_start > id)
-		mnt_group_start = id;
+	ida_free(&mnt_group_ida, mnt->mnt_group_id);
 	mnt->mnt_group_id = 0;
 }
 
@@ -294,15 +276,10 @@ static struct mount *susfs_alloc_non_unshare_ksu_vfsmnt(const char *name)
 	int res;
 
 	if (mnt) {
-retry:
-		ida_pre_get(&mnt_id_ida, GFP_KERNEL);
-		spin_lock(&mnt_id_lock);
-		res = ida_get_new_above(&mnt_id_ida, DEFAULT_KSU_MNT_ID, &mnt->mnt_id);
-		spin_unlock(&mnt_id_lock);
-		if (res == -EAGAIN)
-			goto retry;
+		res = ida_alloc_min(&mnt_id_ida, DEFAULT_KSU_MNT_ID, GFP_KERNEL);
 		if (res < 0)
 			goto out_free_cache;
+		mnt->mnt_id = res;
 
 		if (name) {
 			mnt->mnt_devname = kstrdup_const(name,
