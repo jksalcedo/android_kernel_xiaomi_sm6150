@@ -131,12 +131,11 @@ jobs:
           name: MayonKernel-sweet-${{ env.KERNEL_VERSION }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357
           path: AnyKernel3/*
 
-      - name: 🚀 Publish GitHub Release
+      - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag ${{ env.KERNEL_VERSION }}
           PRERELEASE_FLAG=""
           if [ "${{ env.IS_PRERELEASE }}" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
