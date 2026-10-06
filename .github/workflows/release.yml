@@ -85,7 +85,7 @@ jobs:
 
           ### 📦 Kernel Information
           - **Version:** \`${KERNEL_VERSION}\`
-          - **Linux Version:** \`4.14.357\`
+          - **Linux Version:** \`4.14.357-mayon-perf\`
           - **Build Run:** \`#${{ github.event.inputs.run_id }}\`
           - **Installation:** Flash the attached \`${{ env.ZIP_NAME }}\` via custom recovery (TWRP / OrangeFox).
 
