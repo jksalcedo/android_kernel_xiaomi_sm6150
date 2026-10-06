@@ -1,4 +1,4 @@
-name: Release Kernel
+name: release
 
 on:
   workflow_dispatch:
