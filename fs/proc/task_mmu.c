@@ -168,15 +168,18 @@ static void seq_print_vma_name(struct seq_file *m, struct vm_area_struct *vma)
 		if (current->mm == mm)
 			gup_flags = 0;
 
-		if (i == 0)
-			seq_puts(m, "[anon:");
-
 		pages_pinned = get_user_pages_remote(current, mm,
 				page_start_vaddr, 1, gup_flags, &page, NULL, NULL);
 		if (pages_pinned < 1) {
-			seq_puts(m, "<fault>]");
+			if (i == 0)
+				seq_puts(m, "[anon:unknown]");
+			else
+				seq_putc(m, ']');
 			return;
 		}
+
+		if (i == 0)
+			seq_puts(m, "[anon:");
 
 		kaddr = (const char *)kmap(page);
 		len = min(max_len, PAGE_SIZE - page_offset);
