@@ -157,17 +157,22 @@ static void seq_print_vma_name(struct seq_file *m, struct vm_area_struct *vma)
 	page_offset = (unsigned long)name - page_start_vaddr;
 	num_pages = DIV_ROUND_UP(page_offset + max_len, PAGE_SIZE);
 
-	seq_puts(m, "[anon:");
-
 	for (i = 0; i < num_pages; i++) {
 		int len;
 		int write_len;
 		const char *kaddr;
 		long pages_pinned;
 		struct page *page;
+		unsigned int gup_flags = FOLL_NOWAIT;
+
+		if (current->mm == mm)
+			gup_flags = 0;
+
+		if (i == 0)
+			seq_puts(m, "[anon:");
 
 		pages_pinned = get_user_pages_remote(current, mm,
-				page_start_vaddr, 1, FOLL_NOWAIT, &page, NULL, NULL);
+				page_start_vaddr, 1, gup_flags, &page, NULL, NULL);
 		if (pages_pinned < 1) {
 			seq_putc(m, ']');
 			return;
