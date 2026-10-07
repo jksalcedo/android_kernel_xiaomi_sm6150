@@ -95,12 +95,22 @@ jobs:
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|CONFIG_KSU_SUSFS|LTO' out/.config
 
-          /usr/bin/time -v make -j2 O=out \
+          /usr/bin/time -v make -j3 O=out \
             CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm \
             OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            Image.gz dtbs
+
+          # Generate dtb.img
+          find out/arch/arm64/boot/dts/qcom/ -name "*sweet*.dtb" -o -name "xiaomi-sdmmagpie.dtb" | sort -u | xargs cat > out/arch/arm64/boot/dtb.img
+
+          # Generate dtbo.img using mkdtboimg
+          if [ ! -f scripts/mkdtboimg.py ]; then
+            curl -fsSL https://raw.githubusercontent.com/LineageOS/android_system_libufdt/lineage-20.0/utils/src/mkdtboimg.py -o scripts/mkdtboimg.py
+          fi
+          python3 scripts/mkdtboimg.py create out/arch/arm64/boot/dtbo.img --page_size=4096 $(find out/arch/arm64/boot/dts/qcom/ -name "*sweet*.dtbo")
 
       - name: Package with AnyKernel3
         run: |
