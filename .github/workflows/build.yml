@@ -92,6 +92,9 @@ jobs:
             -e KSU_SUSFS_SUS_KSTAT \
             -e KSU_SUSFS_OPEN_REDIRECT
           
+          # Disable KSU features temporarily cause of build errors
+          scripts/config --file out/.config -d KSU -d KSU_SUSFS
+
           make O=out olddefconfig
           grep -E 'CONFIG_KSU|CONFIG_KSU_SUSFS|LTO' out/.config
 
