@@ -32,10 +32,10 @@
 #include <linux/regmap.h>
 #include <linux/random.h>
 
-#define ds_info	pr_err
-#define ds_dbg	pr_err
+#define ds_info	pr_debug
+#define ds_dbg	pr_debug
 #define ds_err	pr_err
-#define ds_log	pr_err
+#define ds_log	pr_info_ratelimited
 
 struct ds28e16_data {
 	struct platform_device *pdev;
@@ -236,8 +236,8 @@ unsigned char *read_buf, int *read_len, int write_len)
 	buf[buf_len++] = read_byte();
 	buf[buf_len++] = read_byte();
 
-	ds_err("DS28E16_standard_cmd_flow: crc is :\n");
-	ds_err("%02x %02x \n",buf[buf_len-1], buf[buf_len]);
+	ds_dbg("DS28E16_standard_cmd_flow: crc is :\n");
+	ds_dbg("%02x %02x\n", buf[buf_len - 1], buf[buf_len]);
 
 	CRC16 = 0;
 	for (i = 0; i < buf_len; i++)
@@ -995,7 +995,7 @@ unsigned char *Challenge, unsigned char *Secret_Seeds, unsigned char *S_Secret)
 		flag_mi_auth_result = 1;
 		mi_auth_result = ERROR_UNMATCH_MAC;
 		// for debug
-		ds_info("hmac is not match. result=ERROR_UNMATCH_MAC\n");
+		ds_err("hmac is not match. result=ERROR_UNMATCH_MAC\n");
 		flag_mi_page1_data = 0;
 		return ERROR_UNMATCH_MAC;
 	} else {
@@ -1157,7 +1157,7 @@ static int ds28el16_do_authentication(struct ds28e16_data *data)
 
 	if (result != DS_TRUE) {
 		data->batt_verified = 0;
-		ds_log("%s battery verify failed[%d]", __func__, result);
+		ds_err("%s battery verify failed[%d]", __func__, result);
 	}
 	return result;
 }
@@ -1503,7 +1503,7 @@ struct device_attribute *attr, char *buf)
 			count++;
 			ds_log("Read_RomID success!\n");
 		} else {
-			ds_log("Read_RomID fail!\n");
+			ds_err("Read_RomID fail!\n");
 		}
 		ds_dbg("RomID = %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
 		RomID[0], RomID[1], RomID[2], RomID[3],
@@ -1558,7 +1558,7 @@ struct device_attribute *attr, char *buf)
 			count++;
 			ds_log("DS28E16_cmd_readMemory success!\n");
 		} else {
-			ds_log("DS28E16_cmd_readMemory fail!\n");
+			ds_err("DS28E16_cmd_readMemory fail!\n");
 		}
 		ds_dbg("pagedata = %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
 		pagedata[0], pagedata[1], pagedata[2], pagedata[3],
@@ -1600,7 +1600,7 @@ const char *buf, size_t count)
 	if (result == DS_TRUE)
 		ds_log("DS28E16_cmd_writeMemory success!\n");
 	else
-		ds_log("DS28E16_cmd_writeMemory fail!\n");
+		ds_err("DS28E16_cmd_writeMemory fail!\n");
 
 	return count;
 }
@@ -1783,7 +1783,7 @@ struct device_attribute *attr, char *buf)
 			count++;
 			ds_log("DS28E16_cmd_readStatus success!\n");
 		} else {
-			ds_log("DS28E16_cmd_readStatus fail!\n");
+			ds_err("DS28E16_cmd_readStatus fail!\n");
 		}
 		ds_dbg("Status = %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
 		status[0], status[1], status[2], status[3],
@@ -1884,11 +1884,11 @@ static void battery_verify(struct work_struct *work)
 		if (count < VERIFY_MAX_COUNT) {
 			schedule_delayed_work(&data->battery_verify_work,
 						msecs_to_jiffies(VERIFY_PERIOD_S));
-			ds_info("%s battery verify failed times[%d]", __func__, count);
+			ds_err("%s battery verify failed times[%d]", __func__, count);
 			count++;
 		} else {
 			flag_battery_verify_process = false;
-			ds_info("%s battery verify failed[%d]", __func__, result);
+			ds_err("%s battery verify failed[%d]", __func__, result);
 		}
 	}
 }
@@ -1916,7 +1916,7 @@ static void authentic_work(struct work_struct *work)
 		}
 
 		if (retry_authentic == AUTHENTIC_COUNT_MAX) {
-			ds_log("authentic result is %d\n", pval.intval);
+			ds_err("authentic result is %d\n", pval.intval);
 		}
 	} else {
 		ds_log("authentic result is %d\n", pval.intval);
