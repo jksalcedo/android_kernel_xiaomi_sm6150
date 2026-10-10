@@ -6,18 +6,36 @@ A performance-optimized, and thermally balanced custom kernel for the Redmi Note
 
 ## Features
 
-* **KernelSU & SUSFS**: Built-in KernelSU (v0.9.5) with non-GKI manual hooks and SUSFS (v1.5.5) for kernel-level root and mount hiding.
-* **Modern LLVM Toolchain**: Compiled with **Neutron Clang** using Link-Time Optimization (**ThinLTO**).
-* **WALT Scheduler Tuning**: Asymmetric 2+6 (Kryo 470 Gold/Silver) energy-aware load tracking with dynamic input boost.
-* **Optimized Governors**: `schedutil` tuned with disabled artificial I/O wait boosting for better battery and lower heat.
-* **Memory & Storage**: ZRAM with ZSTD compression, balanced page reclaim, and `mq-deadline` I/O scheduler.
-* **Networking**: BBR TCP congestion control with FQ packet scheduling by default.
-
-For an in-depth breakdown of our tuning decisions, read the [Comprehensive Architecture and Kernel Tuning Analysis](ARCHITECTURE.md).
+* **BakaSU & SuSFS**: Built-in BakaSU (v4.2.0-rc3) with
+  non-GKI manual hooks and SuSFS (v2.3.0) for root integration
+  and mount hiding.
+* **CPU Scheduling**: WALT load tracking enabled, with scheduler
+  capacity-margin adjustments for the Snapdragon 732G's
+  six efficiency cores and two performance cores.
+* **CPU Frequency Scaling**: `schedutil` selected as the kernel's
+  default governor. ROM settings may override governor selection
+  and tuning.
+* **Memory**: ZRAM with LZ4 and ZSTD compression support, plus
+  balanced anonymous/file-page reclaim. The ROM selects the active
+  compressor and swap size.
+* **Storage**: SCSI blk-mq enabled by default, with mq-deadline
+  selected for single-hardware-queue devices. Boot parameters and
+  ROM settings may override defaults.
+* **Networking**: BBR selected as the default TCP congestion-control
+  algorithm and FQ as the default queue discipline. Runtime settings
+  may be overridden by the ROM.
+* **Charging**: Device-specific voltage and current limits, with
+  reduced routine charging-driver logging.
+* **Android Compatibility**: `CAP_CHECKPOINT_RESTORE` backport
+  addressing the reported Chromium/AppZygote startup failure
+  on VoltageOS 6.1 / Android 17.
+* **Optional Input Boost**: Configurable CPU frequency floors applied
+  briefly after input events. Requires nonzero boost frequencies;
+  effectiveness and power consumption depend on ROM configuration.
 
 ## Flashing
 
-1. Download `mayon-kernel-sweet.zip` from [Releases](../../releases) or GitHub Actions artifacts.
+1. Download the `zip` from [Releases](../../releases) or GitHub Actions artifacts.
 2. Boot into recovery (TWRP / OrangeFox).
 3. Flash the zip and reboot.
 

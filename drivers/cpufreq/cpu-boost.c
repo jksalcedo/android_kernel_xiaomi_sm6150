@@ -318,7 +318,7 @@ static int cpu_boost_init(void)
 
 	cpu_boost_wq = alloc_workqueue("cpuboost_wq", WQ_HIGHPRI, 0);
 	if (!cpu_boost_wq)
-		return -EFAULT;
+		return -ENOMEM;
 
 	INIT_WORK(&input_boost_work, do_input_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
@@ -327,9 +327,23 @@ static int cpu_boost_init(void)
 		s = &per_cpu(sync_info, cpu);
 		s->cpu = cpu;
 	}
-	cpufreq_register_notifier(&boost_adjust_nb, CPUFREQ_POLICY_NOTIFIER);
+
+	ret = cpufreq_register_notifier(&boost_adjust_nb,
+					CPUFREQ_POLICY_NOTIFIER);
+	if (ret)
+		goto err_destroy_workqueue;
 
 	ret = input_register_handler(&cpuboost_input_handler);
+	if (ret)
+		goto err_unregister_notifier;
+
 	return 0;
+
+err_unregister_notifier:
+	cpufreq_unregister_notifier(&boost_adjust_nb, CPUFREQ_POLICY_NOTIFIER);
+err_destroy_workqueue:
+	destroy_workqueue(cpu_boost_wq);
+	cpu_boost_wq = NULL;
+	return ret;
 }
 late_initcall(cpu_boost_init);

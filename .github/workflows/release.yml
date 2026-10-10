@@ -83,7 +83,7 @@ jobs:
           cat <<EOF > release_notes.md
           ## Mayon Kernel for Xiaomi Redmi Note 10 Pro (sweet / sweetin)
 
-          ### 📦 Kernel Information
+          ### Kernel Information
           - **Version:** \`${KERNEL_VERSION}\`
           - **Linux Version:** \`4.14.357-mayon-perf\`
           - **Build Run:** \`#${{ github.event.inputs.run_id }}\`
