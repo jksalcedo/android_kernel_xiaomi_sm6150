@@ -4,10 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       kernel_version:
-        description: 'Kernel Version (e.g. v0.1.0-beta.1)'
-        required: true
-        default: 'v0.1.0-beta.1'
+        description: 'Optional version, e.g. v0.2.0-beta.1. Leave blank for an automatic branch/commit name.'
+        required: false
+        type: string
+        default: ''
   push:
+    branches:
+      - dev
     tags:
       - 'v*'
 
@@ -25,20 +28,39 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Determine Version and Metadata
+        env:
+          REQUESTED_VERSION: ${{ inputs.kernel_version || '' }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            KERNEL_VER="${{ github.event.inputs.kernel_version }}"
-          else
-            KERNEL_VER="${{ github.ref_name }}"
-          fi
-          echo "KERNEL_VERSION=${KERNEL_VER}" >> $GITHUB_ENV
-          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          set -euo pipefail
 
-          if echo "${KERNEL_VER}" | grep -q -- '-'; then
-            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            KERNEL_VER="$GITHUB_REF_NAME"
+          elif [[ -n "$REQUESTED_VERSION" ]]; then
+            KERNEL_VER="$REQUESTED_VERSION"
           else
-            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+            BRANCH_NAME=$(printf '%s' "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9._-' '-')
+            BRANCH_NAME=${BRANCH_NAME:0:40}
+            KERNEL_VER="${BRANCH_NAME}-${GITHUB_SHA:0:7}-r${GITHUB_RUN_NUMBER}"
           fi
+
+          if [[ ! "$KERNEL_VER" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]]; then
+            echo "Invalid version: use letters, numbers, dots, underscores, + or -." >&2
+            exit 1
+          fi
+
+          IS_PRERELEASE=true
+          if [[ "$GITHUB_REF_TYPE" == "tag" || -n "$REQUESTED_VERSION" ]]; then
+            if [[ "$KERNEL_VER" != *-* ]]; then
+              IS_PRERELEASE=false
+            fi
+          fi
+
+          {
+            printf 'KERNEL_VERSION=%s\n' "$KERNEL_VER"
+            printf 'BUILD_DATE=%s\n' "$(date +%Y%m%d)"
+            printf 'IS_PRERELEASE=%s\n' "$IS_PRERELEASE"
+            printf 'ARTIFACT_NAME=MayonKernel-sweet-%s\n' "$KERNEL_VER"
+          } >> "$GITHUB_ENV"
 
       - name: Install Build Dependencies
         run: |
@@ -129,14 +151,14 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/*placeholder
 
           # Create flashable ZIP
-          ZIP_NAME="MayonKernel-sweet-${{ env.KERNEL_VERSION }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357.zip"
+          ZIP_NAME="${ARTIFACT_NAME}.zip"
           (cd AnyKernel3 && zip -r9 "../${ZIP_NAME}" . -x ".git/*")
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
       - name: Upload Flashable ZIP (Action Artifact)
         uses: actions/upload-artifact@v6
         with:
-          name: MayonKernel-sweet-${{ env.KERNEL_VERSION }}+build.${{ github.run_number }}-${{ env.BUILD_DATE }}-linux-4.14.357-mayon-perf
+          name: ${{ env.ARTIFACT_NAME }}
           path: AnyKernel3/*
 
 
