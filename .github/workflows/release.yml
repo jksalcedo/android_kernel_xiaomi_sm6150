@@ -36,17 +36,45 @@ jobs:
       - name: Download Artifact from Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ inputs.run_id }}
         run: |
-          echo "Downloading artifacts from run ${{ github.event.inputs.run_id }}..."
-          gh run download ${{ github.event.inputs.run_id }} --dir downloaded_artifacts
-          
-          ZIP_FILE=$(find downloaded_artifacts -name "*.zip" | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Error: No zip artifact found in run ${{ github.event.inputs.run_id }}"
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "Invalid build run ID" >&2; exit 1; }
+          gh run download "$RUN_ID" --dir downloaded_artifacts
+
+          mapfile -d '' -t zips < <(find downloaded_artifacts -type f -name '*.zip' -print0)
+
+          if (( ${#zips[@]} == 1 )); then
+            ZIP_FILE=$(realpath "${zips[0]}")
+          elif (( ${#zips[@]} == 0 )); then
+            mapfile -d '' -t scripts < <(find downloaded_artifacts -type f -name anykernel.sh -print0)
+            if (( ${#scripts[@]} != 1 )); then
+              echo "Expected exactly one AnyKernel3 package; found ${#scripts[@]}." >&2
+              exit 1
+            fi
+
+            PACKAGE_DIR=$(dirname "${scripts[0]}")
+            test -f "$PACKAGE_DIR/META-INF/com/google/android/update-binary"
+
+            if [[ ! -f "$PACKAGE_DIR/Image.gz" && ! -f "$PACKAGE_DIR/Image" && ! -f "$PACKAGE_DIR/Image.gz-dtb" ]]; then
+              echo "Kernel image missing from artifact" >&2
+              exit 1
+            fi
+
+            ZIP_FILE="$PWD/MayonKernel-sweet-run-${RUN_ID}.zip"
+            if [[ -e "$ZIP_FILE" ]]; then
+              echo "Output ZIP already exists: $ZIP_FILE" >&2
+              exit 1
+            fi
+            (cd "$PACKAGE_DIR" && zip -r9 "$ZIP_FILE" .)
+          else
+            echo "Multiple ZIPs found; select the intended build artifact explicitly." >&2
             exit 1
           fi
-          echo "ZIP_PATH=$ZIP_FILE" >> $GITHUB_ENV
-          echo "ZIP_NAME=$(basename $ZIP_FILE)" >> $GITHUB_ENV
+
+          unzip -t "$ZIP_FILE"
+          printf 'ZIP_PATH=%s\n' "$ZIP_FILE" >> "$GITHUB_ENV"
+          printf 'ZIP_NAME=%s\n' "$(basename "$ZIP_FILE")" >> "$GITHUB_ENV"
 
       - name: Generate Changelog
         id: changelog
