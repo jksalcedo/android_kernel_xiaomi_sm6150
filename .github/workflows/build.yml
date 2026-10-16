@@ -122,7 +122,6 @@ jobs:
 
           for option in \
             MACH_XIAOMI_SWEET \
-            BPF_UNPRIV_DEFAULT_OFF \
             SECURITY_DMESG_RESTRICT \
             INIT_ON_ALLOC_DEFAULT_ON
           do
