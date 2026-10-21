@@ -6,7 +6,7 @@ A performance-optimized, and thermally balanced custom kernel for the Redmi Note
 
 ## Features
 
-* **BakaSU & SuSFS**: Built-in BakaSU (v4.2.0-rc3) with
+* **BakaSU & SuSFS**: BakaSU pinned in [`build/bakasu.env`](build/bakasu.env), with
   non-GKI manual hooks and SuSFS (v2.3.0) for root integration
   and mount hiding.
 * **CPU Scheduling**: WALT load tracking enabled, with scheduler
@@ -54,7 +54,7 @@ Trigger the workflow via the **Actions** tab by selecting **build kernel** > **R
 ## Credits & Acknowledgements
 
 * [LineageOS](https://github.com/LineageOS) team for the device kernel source tree
-* [Baka-SU (ReSukiSU)](https://github.com/Baka-SU/BakaSU) team for root
+* [BakaSU](https://github.com/Baka-SU/BakaSU) team for root
 * [SUSFS (susfs4ksu)](https://gitlab.com/simonpunk/susfs4ksu) by `@simonpunk`
 * [Neutron Toolchains](https://github.com/Neutron-Toolchains) by `@beakthoven`
 * [AnyKernel3](https://github.com/osm0sis/AnyKernel3) by `@osm0sis`

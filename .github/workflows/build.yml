@@ -17,9 +17,6 @@ on:
 permissions:
   contents: write
 
-env:
-  BAKASU_VERSION: 'v4.2.0-rc3'
-
 jobs:
   build-kernel:
     runs-on: ubuntu-24.04
@@ -81,10 +78,22 @@ jobs:
           cd ..
           clang --version
           
-      - name: Setup BakaSU
+      - name: Setup pinned BakaSU
         run: |
-          curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/${BAKASU_VERSION}/kernel/setup.sh" | bash -s "${BAKASU_VERSION}"
-          patch -p1 -d KernelSU < patches/bakasu-4.14-compat.patch
+          set -euo pipefail
+          source build/bakasu.env
+          [[ "$BAKASU_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$BAKASU_MANAGER_RUN" =~ ^[0-9]+$ ]]
+          curl -fLSs --retry 3 \
+            "https://raw.githubusercontent.com/Baka-SU/BakaSU/${BAKASU_COMMIT}/kernel/setup.sh" \
+            -o "${RUNNER_TEMP}/bakasu-setup.sh"
+          bash "${RUNNER_TEMP}/bakasu-setup.sh" "$BAKASU_COMMIT"
+          test "$(git -C KernelSU rev-parse HEAD)" = "$BAKASU_COMMIT"
+          patch --batch --forward --dry-run -p1 -d KernelSU < patches/bakasu-4.14-compat.patch
+          patch --batch --forward -p1 -d KernelSU < patches/bakasu-4.14-compat.patch
+          printf '%s\n' "$BAKASU_COMMIT" > bakasu-commit.txt
+          printf '%s\n' "$BAKASU_MANAGER_RUN" > bakasu-manager-run.txt
+          printf '%s\n' "$GITHUB_SHA" > kernel-commit.txt
 
       - name: Show build resources
         run: |
@@ -122,6 +131,10 @@ jobs:
 
           for option in \
             MACH_XIAOMI_SWEET \
+            KSU \
+            KSU_SUSFS \
+            SECCOMP \
+            SECCOMP_FILTER \
             SECURITY_DMESG_RESTRICT \
             INIT_ON_ALLOC_DEFAULT_ON
           do
@@ -151,6 +164,9 @@ jobs:
       - name: Package with AnyKernel3
         run: |
           git clone --depth=1 https://github.com/jksalcedo/AnyKernel3.git AnyKernel3
+          git -C AnyKernel3 rev-parse HEAD > anykernel-commit.txt
+          cp out/.config kernel.config
+          clang --version > toolchain.txt
           B=out/arch/arm64/boot
           ls -la $B
           cp $B/Image.gz AnyKernel3/ 2>/dev/null || cp $B/Image AnyKernel3/ 2>/dev/null || cp $B/Image.gz-dtb AnyKernel3/ 2>/dev/null
@@ -170,7 +186,12 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: AnyKernel3/*
-
-
-
+          path: |
+            ${{ env.ZIP_NAME }}
+            bakasu-commit.txt
+            bakasu-manager-run.txt
+            kernel-commit.txt
+            anykernel-commit.txt
+            kernel.config
+            toolchain.txt
+          if-no-files-found: error
